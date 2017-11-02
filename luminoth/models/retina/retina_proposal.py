@@ -18,39 +18,31 @@ class RetinaProposal(snt.AbstractModule):
         self._class_nms_threshold = config.class_nms_threshold
         # Maximum number of detections to return.
         self._total_max_detections = config.total_max_detections
-        # Threshold probability
-        self._min_prob_threshold = config.min_prob_threshold or 0.0
 
-    def _build(self, cls_prob, cls_score, proposals, all_anchors, im_shape):
+    def _build(self, cls_score, proposals, all_anchors, im_shape):
         # First we want get the most probable label for each proposal
         # We still have the background on idx 0 so we subtract 1 to the idxs.
-        proposal_label = tf.argmax(cls_prob, axis=1, name='label_argmax') - 1
-        # Get the probability for the selected label for each proposal.
-        proposal_label_prob = tf.reduce_max(cls_prob, axis=1, name='max_label')
+        proposal_label = tf.argmax(cls_score, axis=1, name='label_argmax') - 1
 
         # We are going to use only the non-background proposals.
         non_background_filter = tf.greater_equal(proposal_label, 0)
-        # Filter proposals with less than threshold probability.
-        min_prob_filter = tf.greater_equal(
-            proposal_label_prob, self._min_prob_threshold
-        )
-        proposal_filter = tf.logical_and(
-            non_background_filter, min_prob_filter
-        )
 
         total_proposals = tf.shape(proposals)[0]
 
         proposals = tf.boolean_mask(
-            proposals, proposal_filter, name='mask_proposals')
+            proposals, non_background_filter, name='mask_proposals'
+        )
         proposal_label = tf.boolean_mask(
-            proposal_label, proposal_filter, name='mask_labels')
-        proposal_label_prob = tf.boolean_mask(
-            proposal_label_prob, proposal_filter, name='mask_probs')
+            proposal_label, non_background_filter, name='mask_labels'
+        )
+        cls_score = tf.boolean_mask(
+            cls_score, non_background_filter, name='mask_scores'
+        )
 
         filtered_proposals = tf.shape(proposals)[0]
 
         tf.summary.scalar(
-            'background_or_low_prob_proposals',
+            'background_proposals',
             total_proposals - filtered_proposals,
             ['retina']
         )
@@ -68,22 +60,21 @@ class RetinaProposal(snt.AbstractModule):
             # Filter objects Tensors with class.
             class_filter = tf.equal(proposal_label, class_id)
             class_objects_tf = tf.boolean_mask(objects_tf, class_filter)
-            class_prob = tf.boolean_mask(proposal_label_prob, class_filter)
 
             # Apply class NMS.
             class_selected_idx = tf.image.non_max_suppression(
-                class_objects_tf, class_prob, self._class_max_detections,
+                class_objects_tf, cls_score, self._class_max_detections,
                 iou_threshold=self._class_nms_threshold
             )
 
             # Using NMS resulting indices, gather values from Tensors.
             class_objects_tf = tf.gather(class_objects_tf, class_selected_idx)
-            class_prob = tf.gather(class_prob, class_selected_idx)
+            cls_score = tf.gather(cls_score, class_selected_idx)
 
             # We append values to a regular list which will later be transform
             # to a proper Tensor.
             selected_boxes.append(class_objects_tf)
-            selected_probs.append(class_prob)
+            selected_probs.append(tf.nn.softmax(cls_score))
             # In the case of the class_id, since it is a loop on classes, we
             # already have a fixed class_id. We use `tf.tile` to create that
             # Tensor with the total number of indices returned by the NMS.

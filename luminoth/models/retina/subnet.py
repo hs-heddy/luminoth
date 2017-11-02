@@ -5,7 +5,7 @@ from luminoth.utils.vars import get_activation_function
 
 
 class Subnet(snt.AbstractModule):
-    def __init__(self, config, num_final_channels, final_bias=0, prefix=None,
+    def __init__(self, config, num_final_channels, final_bias, prefix=None,
                  name='subnet'):
         super(Subnet, self).__init__(name=name)
         if prefix is None:
@@ -24,15 +24,17 @@ class Subnet(snt.AbstractModule):
             config.final.activation
         )
 
-    def _build(self, fpn_level, anchors):
+    def _build(self, fpn_level):
         layers = []
         for i in range(self._config.hidden.depth):
+            # TODO: consider making the initializer configurable, although it
+            # may not be the best idea, as most initializations don't converge.
             new_layer = snt.Conv2D(
                 output_channels=self._config.hidden.channels,
                 kernel_shape=self._config.hidden.kernel_shape,
                 initializers={
                     'w': tf.random_normal_initializer(
-                        mean=0.0, stddev=0.01
+                        mean=0.0015, stddev=0.01
                     ),
                 },
                 name='{}_hidden_{}'.format(self._prefix, i)
@@ -47,7 +49,10 @@ class Subnet(snt.AbstractModule):
             output_channels=self._num_final_channels,
             kernel_shape=self._config.final.kernel_shape,
             initializers={
-                'b': tf.constant_initializer(self._final_bias)
+                'w': tf.random_normal_initializer(
+                    mean=0.0, stddev=0.01
+                ),
+                'b': self._final_bias
             },
             name='{}_final'.format(self._prefix)
         )
