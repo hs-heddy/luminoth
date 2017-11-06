@@ -29,7 +29,7 @@ model:
     class_weight: 1
     # The weight of the loss for background will be divided by this number.
     # Due to our use of the focal loss, high values here are overkill.
-    background_weight_divider: 2
+    background_weight_divider: 1
     # Whether or not to sum all the loss values. reduce_sum has given poor
     # results in our experiments. If it's set to False, we use reduce_mean.
     reduce_sum: False
@@ -65,7 +65,7 @@ model:
         # scores (approx) of foregrounds and background.
         # The value in foreground is equivalent to pi in the paper.
         foreground: 0.01  # AMIP
-        background: 0.98
+        background: 0.99
       kernel_shape: [3, 3]
       # Sigmoid is important because we assume values are between 0 and 1 for
       # the focal loss.
