@@ -34,7 +34,7 @@ class Subnet(snt.AbstractModule):
                 kernel_shape=self._config.hidden.kernel_shape,
                 initializers={
                     'w': tf.random_normal_initializer(
-                        mean=0.01, stddev=0.01
+                        mean=0.015, stddev=0.01
                     ),
                 },
                 name='{}_hidden_{}'.format(self._prefix, i)

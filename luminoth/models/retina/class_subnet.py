@@ -3,8 +3,6 @@ import numpy as np
 
 from luminoth.models.retina.subnet import Subnet
 
-BACKGROUNDVALUE = 20
-
 
 class ClassSubnet(Subnet):
     def __init__(self, config, num_anchors, num_classes, name='box_subnet'):
