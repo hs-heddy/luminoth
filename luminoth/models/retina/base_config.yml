@@ -18,6 +18,7 @@ model:
     num_channels: 256  # paper values
     architecture: resnet_v2_101
     train_base: True
+    download: True
     endpoints:
       - 'block4/unit_3/bottleneck_v2/conv3'
       - 'block3/unit_23/bottleneck_v2/conv1'
@@ -29,7 +30,7 @@ model:
     class_weight: 1
     # The weight of the loss for background will be divided by this number.
     # Due to our use of the focal loss, high values here are overkill.
-    background_weight_divider: 1
+    background_weight_divider: 4
     # Whether or not to sum all the loss values. reduce_sum has given poor
     # results in our experiments. If it's set to False, we use reduce_mean.
     reduce_sum: False
@@ -64,7 +65,7 @@ model:
         # These will be the initial scores (approx) of foregrounds and
         # background.
         foreground: 2
-        background: 30
+        background: 10
       kernel_shape: [3, 3]
       # As a general rule, don't use softmax if you're activating with sigmoid,
       # and use it otherwise.
@@ -86,7 +87,7 @@ model:
     # Maximum total detections for an image (sorted by score)
     total_max_detections: 300
     # Minimum prob to be used as proposed object
-    min_prob_threshold: 0.0
+    min_prob_threshold: 0.4
 
 dataset:
   type: tfrecord

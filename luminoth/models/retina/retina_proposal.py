@@ -60,8 +60,16 @@ class RetinaProposal(snt.AbstractModule):
             # Filter objects Tensors with class.
             class_filter = tf.equal(proposal_label, class_id)
             class_objects_tf = tf.boolean_mask(objects_tf, class_filter)
-            cls_score_filtered = tf.boolean_mask(cls_score, class_filter)
-            this_class_score = cls_score_filtered[:, class_id + 1]
+            this_class_score = tf.boolean_mask(cls_score, class_filter)
+            this_class_score = this_class_score[:, class_id + 1]
+            this_class_score = tf.reshape(this_class_score, [-1])
+            this_class_score = tf.Print(
+                this_class_score,
+                [
+                    tf.shape(class_objects_tf), tf.shape(this_class_score)
+                ],
+                message='SHP_OBJS, SHP_SCORE: '
+            )
 
             # Apply class NMS.
             class_selected_idx = tf.image.non_max_suppression(
@@ -72,12 +80,13 @@ class RetinaProposal(snt.AbstractModule):
 
             # Using NMS resulting indices, gather values from Tensors.
             class_objects_tf = tf.gather(class_objects_tf, class_selected_idx)
-            cls_score = tf.gather(cls_score, class_selected_idx)
+            this_class_score = tf.gather(
+                this_class_score, class_selected_idx)
 
             # We append values to a regular list which will later be transform
             # to a proper Tensor.
             selected_boxes.append(class_objects_tf)
-            selected_probs.append(tf.nn.softmax(cls_score))
+            selected_probs.append(tf.nn.softmax(this_class_score))
             # In the case of the class_id, since it is a loop on classes, we
             # already have a fixed class_id. We use `tf.tile` to create that
             # Tensor with the total number of indices returned by the NMS.

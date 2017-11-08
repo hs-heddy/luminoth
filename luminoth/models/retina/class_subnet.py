@@ -1,5 +1,4 @@
 import tensorflow as tf
-import numpy as np
 
 from luminoth.models.retina.subnet import Subnet
 
