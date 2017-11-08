@@ -60,10 +60,13 @@ class RetinaProposal(snt.AbstractModule):
             # Filter objects Tensors with class.
             class_filter = tf.equal(proposal_label, class_id)
             class_objects_tf = tf.boolean_mask(objects_tf, class_filter)
+            cls_score_filtered = tf.boolean_mask(cls_score, class_filter)
+            this_class_score = cls_score_filtered[:, class_id + 1]
 
             # Apply class NMS.
             class_selected_idx = tf.image.non_max_suppression(
-                class_objects_tf, cls_score, self._class_max_detections,
+                class_objects_tf, this_class_score,
+                self._class_max_detections,
                 iou_threshold=self._class_nms_threshold
             )
 

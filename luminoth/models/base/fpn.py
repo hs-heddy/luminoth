@@ -12,14 +12,14 @@ class FPN(BaseNetwork):
         # Copy the endpoints to prevent unwanted behaviour.
         self._endpoints = config.endpoints[:]
         self._num_channels = config.num_channels
-        for i, endpoint in enumerate(self._endpoints):
-            self._endpoints[i] = '{}/{}/{}'.format(
-                self.module_name, config.architecture, self._endpoints[i]
-            )
-            if parent_name:
-                self._endpoints[i] = '{}/{}'.format(
-                    parent_name, self._endpoints[i]
-                )
+        # for i, endpoint in enumerate(self._endpoints):
+        #     self._endpoints[i] = '{}/{}/{}'.format(
+        #         self.module_name, config.architecture, self._endpoints[i]
+        #     )
+        #     if parent_name:
+        #         self._endpoints[i] = '{}/{}'.format(
+        #             parent_name, self._endpoints[i]
+        #         )
 
     def _build(self, inputs, is_training=True):
         base_pred = super(FPN, self)._build(
@@ -62,11 +62,11 @@ class FPN(BaseNetwork):
     def _get_endpoint_list(self, base_pred):
         end_points_dict = base_pred['end_points']
         end_points = []
-        for key in self._endpoints:
-            try:
-                end_points.append(end_points_dict[key])
-            except KeyError:
-                tf.logging.warning('Illegal endpoint name "{}"'.format(key))
+        for name in self._endpoints:
+            for key, value in end_points_dict.items():
+                if key.endswith(name):
+                    end_points.append(value)
+                    continue
         if len(end_points) < 1:
             raise ValueError('No legal endpoint names for FPN.')
         return end_points

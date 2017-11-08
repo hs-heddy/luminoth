@@ -49,6 +49,7 @@ class Retina(snt.AbstractModule):
         self._class_weight = float(self._config.model.loss.class_weight)
         self._background_divider = float(
             self._config.model.loss.background_weight_divider)
+        self._use_softmax = self._config.model.class_subnet.final.use_softmax
 
         self._offset = self._config.model.anchors.offset
 
@@ -185,6 +186,13 @@ class Retina(snt.AbstractModule):
             cls_scores = tf.boolean_mask(
                 cls_scores, filter_ignored, name='mask_scores')
 
+            cls_target = tf.Print(
+                cls_target,
+                [cls_target, cls_scores],
+                message="TARG, SCORE: ",
+                summarize=210
+            )
+
             nonbackground = tf.greater(tf.argmax(cls_scores, axis=1), 0)
             nonbackground_n = tf.shape(tf.where(nonbackground))[0]
 
@@ -203,7 +211,8 @@ class Retina(snt.AbstractModule):
                 cls_scores, cls_target,
                 self._num_classes, gamma=self._gamma,
                 weights=self._class_weight,
-                background_divider=self._background_divider
+                background_divider=self._background_divider,
+                use_softmax=self._use_softmax
             )
             reg_loss = smooth_l1_loss(
                 bbox_preds, bbox_target

@@ -2,7 +2,7 @@ import tensorflow as tf
 
 
 def focal_loss(cls_scores, targets, num_classes, gamma=2.0,
-               weights=None, background_divider=1):
+               weights=None, background_divider=1, use_softmax=False):
     """Compute RetinaNet's focal loss.
 
     Args:
@@ -34,6 +34,8 @@ def focal_loss(cls_scores, targets, num_classes, gamma=2.0,
         weighted_cross_entropy = tf.multiply(
             cross_entropy, weights, name='apply_weights'
         )
+        if use_softmax:
+            cls_scores = tf.nn.softmax(cls_scores)
         # Reduce max could be switched with reduce_sum, etc. as we're only
         # getting one element per row.
         focal_weights = tf.pow(
